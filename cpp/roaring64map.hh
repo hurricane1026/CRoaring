@@ -50,6 +50,14 @@ class Roaring64Map {
      */
     Roaring64Map(roaring_bitmap_t *s) { emplaceOrInsert(0, s); }
 
+    Roaring64Map(const Roaring64Map& r)
+      : roarings(r.roarings),
+        copyOnWrite(r.copyOnWrite) { }
+
+    Roaring64Map(Roaring64Map&& r)
+      : roarings(r.roarings),
+        copyOnWrite(r.copyOnWrite) { }
+
 	/**
 	 * Assignment operator.
 	 */
@@ -57,7 +65,6 @@ class Roaring64Map {
 		roarings = r.roarings;
 		return *this;
 	}
-	
 	/**
      * Construct a bitmap from a list of integer values.
      */
@@ -924,7 +931,7 @@ class Roaring64MapSetBitForwardIterator {
         }
         return orig;
     }
-	
+
 	bool move(const value_type& x) {
 		map_iter = p.lower_bound(Roaring64Map::highBytes(x));
 		if (map_iter != p.cend()) {
@@ -940,7 +947,7 @@ class Roaring64MapSetBitForwardIterator {
 		}
 		return false;
 	}
-	
+
 	bool operator==(const Roaring64MapSetBitForwardIterator &o) {
         if (map_iter == map_end && o.map_iter == o.map_end) return true;
         if (o.map_iter == o.map_end) return false;
@@ -959,7 +966,14 @@ class Roaring64MapSetBitForwardIterator {
 		i = r.i;
 		return *this;
 	}
-	
+
+  Roaring64MapSetBitForwardIterator(const Roaring64MapSetBitForwardIterator& r)
+  : p(r.p),
+    map_iter(r.map_iter),
+    map_end(r.map_end),
+    i(r.i)
+  { }
+
     Roaring64MapSetBitForwardIterator(const Roaring64Map &parent,
                                       bool exhausted = false)
         : p(parent.roarings), map_end(parent.roarings.cend()) {
