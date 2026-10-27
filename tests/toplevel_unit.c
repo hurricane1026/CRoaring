@@ -4781,10 +4781,29 @@ DEFINE_TEST(issue_15jan2024) {
     roaring_bitmap_free(r2);
 }
 
+DEFINE_TEST(portable_deserialize_odd_run_bitmap_alignment) {
+    // A single run-container flag byte leaves the following key/cardinality array at offset 5.
+    // This is valid portable serialization and must be read without forming an aligned uint16_t pointer.
+    const char serialized[] = {0x3b, 0x30, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01,
+                               0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00};
+    const size_t serialized_size =
+        roaring_bitmap_portable_deserialize_size(serialized, sizeof(serialized));
+    assert_int_equal(serialized_size, sizeof(serialized));
+
+    roaring_bitmap_t *bitmap =
+        roaring_bitmap_portable_deserialize_safe(serialized, sizeof(serialized));
+    assert_non_null(bitmap);
+    assert_int_equal(roaring_bitmap_get_cardinality(bitmap), 2);
+    assert_true(roaring_bitmap_contains(bitmap, 0));
+    assert_true(roaring_bitmap_contains(bitmap, 1));
+    roaring_bitmap_free(bitmap);
+}
+
 int main() {
     tellmeall();
 
     const struct CMUnitTest tests[] = {
+        cmocka_unit_test(portable_deserialize_odd_run_bitmap_alignment),
         cmocka_unit_test(issue538b),
         cmocka_unit_test(issue538),
         cmocka_unit_test(simple_roaring_bitmap_or_many),
